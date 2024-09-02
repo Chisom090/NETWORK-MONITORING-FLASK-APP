@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APT Detection Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        .container {
+            margin-top: 20px;
+        }
+        .log-output {
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .alert {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">APT Detection Dashboard</h1>
+        
+        <!-- Buttons for starting and stopping sniffing -->
+        <div class="text-center">
+            <button id="start-sniffing" class="btn btn-primary">Start Sniffing</button>
+            <button id="stop-sniffing" class="btn btn-danger">Stop Sniffing</button>
+        </div>
+
+        <!-- Section for anomaly detection -->
+        <div class="alert alert-warning" id="anomaly-section">
+            <h3>Check Anomalies</h3>
+            <form id="anomaly-form">
+                <div class="form-group">
+                    <label for="anomaly-data">Input Data (JSON):</label>
+                    <textarea id="anomaly-data" class="form-control" rows="5"></textarea>
+                </div>
+                <button type="submit" class="btn btn-warning">Check Anomalies</button>
+            </form>
+            <div id="anomaly-result" class="mt-3"></div>
+        </div>
+
+        <!-- Section for explanations -->
+        <div class="alert alert-secondary" id="explain-section">
+            <h3>Explain Anomalies</h3>
+            <form id="explain-form">
+                <div class="form-group">
+                    <label for="explain-data">Input Data (JSON):</label>
+                    <textarea id="explain-data" class="form-control" rows="5"></textarea>
+                </div>
+                <button type="submit" class="btn btn-secondary">Explain</button>
+            </form>
+            <div id="explain-result" class="mt-3"></div>
+        </div>
+
+        <!-- Section for logs -->
+        <div class="alert alert-dark" id="logs-section">
+            <h3>View Logs</h3>
+            <button id="get-logs" class="btn btn-info">Get Logs</button>
+            <div id="log-output" class="log-output mt-3"></div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+
+        // Start sniffing button click
+        $('#start-sniffing').click(() => {
+            $.post('/start_sniffing', (response) => {
+                alert(response.status);
+            });
+        });
+
+        // Stop sniffing button click
+        $('#stop-sniffing').click(() => {
+            $.post('/stop_sniffing', (response) => {
+                alert(response.status);
+            });
+        });
+
+        // Anomaly form submission
+        $('#anomaly-form').submit((event) => {
+            event.preventDefault();
+            try {
+                const data = JSON.parse($('#anomaly-data').val());
+                $.ajax({
+                    url: '/anomaly',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: (response) => {
+                        $('#anomaly-result').html(`<pre>${JSON.stringify(response, null, 2)}</pre>`);
+                    },
+                    error: () => {
+                        $('#anomaly-result').html('<p class="text-danger">Invalid JSON input</p>');
+                    }
+                });
+            } catch (e) {
+                $('#anomaly-result').html('<p class="text-danger">Invalid JSON input</p>');
+            }
+        });
+
+        // Explain form submission
+        $('#explain-form').submit((event) => {
+            event.preventDefault();
+            try {
+                const data = JSON.parse($('#explain-data').val());
+                $.ajax({
+                    url: '/explain',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: (response) => {
+                        $('#explain-result').html(`<pre>${JSON.stringify(response, null, 2)}</pre>`);
+                    },
+                    error: () => {
+                        $('#explain-result').html('<p class="text-danger">Invalid JSON input</p>');
+                    }
+                });
+            } catch (e) {
+                $('#explain-result').html('<p class="text-danger">Invalid JSON input</p>');
+            }
+        });
+
+        // Get logs button click
+        $('#get-logs').click(() => {
+            $.get('/logs', (response) => {
+                $('#log-output').html(`<pre>${response.logs.join('\n')}</pre>`);
+            });
+        });
+    </script>
+</body>
+</html>
